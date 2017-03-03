@@ -159,12 +159,6 @@ function main() {
                         Csq:\t${ csq }\n
                         Committed? ${ committed }
                     `)
-
-                    db.allDocs( { include_docs: true }, function( err, res ) {
-                        res.rows.forEach( function( record ) {
-                            console.log( record.doc )
-                        })
-                    })
                 }
             }
             next()
@@ -199,9 +193,12 @@ function main() {
                             if ( err ) {
                                 console.log( 'SYNC POUCHDB ERR', err )
                             } else {
+                                console.log( `DB size == ${ res.rows.length }` )
+
                                 // zomg really need to write a view for this
                                 res.rows.forEach( function( record ) {
                                     if ( !record.syncd ) {
+                                        console.log( `Syncing ${ record._id }` )
                                         client.query(`
                                             insert into samples values (
                                                 ${ record._id },
