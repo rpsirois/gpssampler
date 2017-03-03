@@ -169,7 +169,7 @@ function main() {
             if ( cur >= ( syncClock + 10000 ) ) { // ten seconds
                 syncClock = cur
 
-                var pool = pg.Pool({
+                var pool = new pg.Pool({
                     user: 'postgres',
                     password: 'password',
                     host: '138.68.45.102',
