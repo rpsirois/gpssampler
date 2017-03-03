@@ -196,8 +196,8 @@ function main() {
                             var doc = record.doc
 
                             if ( !doc.syncd ) {
-                                console.log( `Syncing ${ doc._id }` )
-                                pool.query(`
+                                console.log( 'Syncing', doc )
+                                var query = `
                                     insert into samples values (
                                         ${ doc._id },
                                         ${ doc.alt },
@@ -209,7 +209,9 @@ function main() {
                                         ), 4326 ),
                                         NULL
                                     );
-                                `, function( insErr, result ) {
+                                `
+                                console.log( 'Query', query )
+                                pool.query( query, function( insErr, result ) {
                                     if ( err ) {
                                         console.log( 'ERR INSERTING POSTGIS RECORD', insErr )
                                     } else {
