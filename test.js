@@ -1,5 +1,6 @@
 var async = require( 'async' )
 var PouchDB = require( 'pouchdb' )
+var pg = require( 'pg' )
 var sp = require( 'serialport' )
 var nmea = require( 'nmea' )
 
@@ -115,15 +116,17 @@ function commitSample( db, doc ) {
 
 // main program loop
 function main() {
-    var clock = (new Date()).getTime()
+    var sampleClock = (new Date()).getTime()
+    var syncClock = (new Date()).getTime()
     var db = new PouchDB( 'samples' )
 
+    // sampling loop
     async.forever(
         function( next ) {
             var cur = (new Date()).getTime()
-            //if ( cur >= ( clock + 300000 ) ) { // five minutes
-            if ( cur >= ( clock + 5000 ) ) { // five seconds
-                clock = cur
+            //if ( cur >= ( sampleClock + 300000 ) ) { // five minutes
+            if ( cur >= ( sampleClock + 5000 ) ) { // five seconds
+                sampleClock = cur
 
                 if ( typeof csq != 'undefined' ) { // csq data may not be ready yet
                     const doc = {
@@ -131,7 +134,8 @@ function main() {
                         lat: lat,
                         lon: lon,
                         alt: alt,
-                        csq: csq
+                        csq: csq,
+                        syncd: false
                     }
 
                     // only commit the sample if there's a significant enough change in distance from the last sample
@@ -166,7 +170,75 @@ function main() {
             next()
         },
         function( err ) {
-            console.log( err )
+            console.log( 'SAMPLE LOOP ERR', err )
+        }
+    )
+
+    // postgis synchoronization loop
+    async.forever(
+        function( next ) {
+            var cur = (new Date()).getTime()
+            //if ( cur >= ( syncClock + 3.6e6 ) ) { // one hour
+            if ( cur >= ( syncClock + 10000 ) ) { // ten seconds
+                syncClock = cur
+
+                // make a new connection each time
+                var client = new pg.Client({
+                    user: 'postgres',
+                    password: 'password',
+                    host: '138.68.45.102',
+                    port: 5984,
+                    database: 'gpssamples'
+                })
+
+                client.connect( function( err ) {
+                    if ( err ) {
+                        console.log( 'PG CONNECT ERR', err )
+                    } else {
+                        db.allDocs( { include_docs: true }, function( err, res ) {
+                            if ( err ) {
+                                console.log( 'SYNC POUCHDB ERR', err )
+                            } else {
+                                // zomg really need to write a view for this
+                                res.rows.forEach( function( record ) {
+                                    if ( !record.syncd ) {
+                                        client.query(`
+                                            insert into samples values (
+                                                ${ record._id },
+                                                ${ record.alt },
+                                                ${ record.csq },
+                                                ${ record.timestamp },
+                                                ST_SetSRID( ST_MakePoint(
+                                                    ${ record.lon },
+                                                    ${ record.lat }
+                                                ), 4326 ),
+                                                NULL
+                                            );
+                                        `, function( insErr, result ) {
+                                            if ( err ) {
+                                                console.log( 'ERR INSERTING POSTGIS RECORD', insErr )
+                                            } else {
+                                                // maybe i should actually check the response... mehhhh
+                                                db.put({
+                                                    _id: record._id,
+                                                    _rev: record._rev,
+                                                    syncd: true
+                                                })
+                                            }
+                                        })
+                                    }
+                                })
+                            }
+                        })
+                    }
+                })
+
+                client.end() // kill the client until the next loop regenerates it
+            }
+            next()
+        },
+        function( err ) {
+            console.log( 'POSTGIS SYNC ERR', err )
         }
     )
 }
