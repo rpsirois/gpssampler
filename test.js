@@ -177,56 +177,55 @@ function main() {
                     database: 'gpssamples'
                 })
 
+                pool.on( 'error', function( err ) {
+                    console.log( 'POSTGIS POOL ERR', err )
+                })
+
                 pool.connect( function( err, client, releaseConn ) {
-                    if ( err ) {
-                        console.log( 'POSTGIS CONNECTION ERR', err )
-                    } else {
-                        console.log( 'Getting all the PouchDB samples for sync' )
-                        db.allDocs( { include_docs: true }, function( pouchErr, res ) {
-                            if ( pouchErr ) {
-                                console.log( 'SYNC POUCHDB ERR', pouchErr )
-                            } else {
-                                console.log( `DB size == ${ res.rows.length }` )
+                    console.log( 'Getting all the PouchDB samples for sync' )
+                    db.allDocs( { include_docs: true }, function( pouchErr, res ) {
+                        if ( pouchErr ) {
+                            console.log( 'SYNC POUCHDB ERR', pouchErr )
+                        } else {
+                            console.log( `DB size == ${ res.rows.length }` )
 
-                                // zomg really need to write a view for this
-                                res.rows.forEach( function( record ) {
-                                    var doc = record.doc
+                            // zomg really need to write a view for this
+                            res.rows.forEach( function( record ) {
+                                var doc = record.doc
 
-                                    if ( !doc.syncd ) {
-                                        console.log( 'Syncing', doc )
-                                        var query = `
-                                            insert into samples values (
-                                                '${ doc._id }',
-                                                ${ doc.alt },
-                                                '${ doc.csq }',
-                                                '${ doc.timestamp }',
-                                                ST_SetSRID( ST_MakePoint(
-                                                    ${ doc.lon },
-                                                    ${ doc.lat }
-                                                ), 4326 ),
-                                                NULL
-                                            );
-                                        `
-                                        console.log( 'Query', query )
-                                        client.query( query, function( insErr, result ) {
-                                            if ( err ) {
-                                                console.log( 'ERR INSERTING POSTGIS RECORD', insErr )
-                                            } else {
-                                                // maybe i should actually check the response... mehhhh
-                                                console.log( 'here' )
-                                                db.put({
-                                                    _id: doc._id,
-                                                    _rev: doc._rev,
-                                                    syncd: true
-                                                })
-                                            }
-                                        })
-                                    }
-                                })
-                            }
-                        })
-                    }
-                    //releaseConn()
+                                if ( !doc.syncd ) {
+                                    console.log( 'Syncing', doc )
+                                    var query = `
+                                        insert into samples values (
+                                            '${ doc._id }',
+                                            ${ doc.alt },
+                                            '${ doc.csq }',
+                                            '${ doc.timestamp }',
+                                            ST_SetSRID( ST_MakePoint(
+                                                ${ doc.lon },
+                                                ${ doc.lat }
+                                            ), 4326 ),
+                                            NULL
+                                        );
+                                    `
+                                    console.log( 'Query', query )
+                                    client.query( query, function( insErr, result ) {
+                                        if ( err ) {
+                                            console.log( 'ERR INSERTING POSTGIS RECORD', insErr )
+                                        } else {
+                                            // maybe i should actually check the response... mehhhh
+                                            console.log( 'here' )
+                                            db.put({
+                                                _id: doc._id,
+                                                _rev: doc._rev,
+                                                syncd: true
+                                            })
+                                        }
+                                    })
+                                }
+                            })
+                        }
+                    })
                 })
             }
             next()
