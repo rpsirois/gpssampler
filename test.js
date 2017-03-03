@@ -191,31 +191,19 @@ function main() {
 
                             if ( !doc.syncd ) {
                                 console.log( 'Syncing', doc )
-                                var query = `
-                                    insert into samples values (
-                                        '${ doc._id }',
-                                        ${ doc.alt },
-                                        '${ doc.csq }',
-                                        '${ doc.timestamp }',
-                                        ST_SetSRID( ST_MakePoint(
-                                            ${ doc.lon },
-                                            ${ doc.lat }
-                                        ), 4326 ),
-                                        NULL
-                                    );
-                                `
-                                console.log( 'Query', query )
-                                pool.query( query )
-                                    .then( function( result ) {
-                                        // maybe i should actually check the response... mehhhh
-                                        console.log( 'here' )
-                                        db.put({
-                                            _id: doc._id,
-                                            _rev: doc._rev,
-                                            syncd: true
-                                        })
+                                pool.query(
+                                    'insert into samples values ( $1, $2, $3, $4, ST_SetSRID( ST_MakePoint( $5, $6 ), 4326 ), NULL );',
+                                    [ doc._id, doc.alt, doc.csq, doc.timestamp, doc.lon, doc.lat ]
+                                )
+                                .then( function( result ) {
+                                    console.log( result )
+                                    db.put({
+                                        _id: doc._id,
+                                        _rev: doc._rev,
+                                        syncd: true
                                     })
-                                    .catch( err => console.log( 'ERR INSERTING POSTGIS RECORD', insErr ) )
+                                })
+                                .catch( err => console.log( 'ERR INSERTING POSTGIS RECORD', insErr ) )
                             }
                         })
                     }
