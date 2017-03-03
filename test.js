@@ -176,8 +176,7 @@ function main() {
             if ( cur >= ( syncClock + 10000 ) ) { // ten seconds
                 syncClock = cur
 
-                // make a new connection each time
-                var client = new pg.Client({
+                var pool = new pg.Pool({
                     user: 'postgres',
                     password: 'password',
                     host: '138.68.45.102',
@@ -185,45 +184,38 @@ function main() {
                     database: 'gpssamples'
                 })
 
-                console.log( 'Connecting to PostGIS database' )
-                client.connect( function( err ) {
-                    if ( err ) {
-                        console.log( 'PG CONNECT ERR', err )
+                console.log( 'Getting all the PouchDB samples for sync' )
+                db.allDocs( { include_docs: true }, function( pouchErr, res ) {
+                    if ( pouchErr ) {
+                        console.log( 'SYNC POUCHDB ERR', pouchErr )
                     } else {
-                        console.log( 'Getting all the PouchDB samples for sync' )
-                        db.allDocs( { include_docs: true }, function( pouchErr, res ) {
-                            if ( pouchErr ) {
-                                console.log( 'SYNC POUCHDB ERR', pouchErr )
-                            } else {
-                                console.log( `DB size == ${ res.rows.length }` )
+                        console.log( `DB size == ${ res.rows.length }` )
 
-                                // zomg really need to write a view for this
-                                res.rows.forEach( function( record ) {
-                                    if ( !record.syncd ) {
-                                        console.log( `Syncing ${ record._id }` )
-                                        client.query(`
-                                            insert into samples values (
-                                                ${ record._id },
-                                                ${ record.alt },
-                                                ${ record.csq },
-                                                ${ record.timestamp },
-                                                ST_SetSRID( ST_MakePoint(
-                                                    ${ record.lon },
-                                                    ${ record.lat }
-                                                ), 4326 ),
-                                                NULL
-                                            );
-                                        `, function( insErr, result ) {
-                                            if ( err ) {
-                                                console.log( 'ERR INSERTING POSTGIS RECORD', insErr )
-                                            } else {
-                                                // maybe i should actually check the response... mehhhh
-                                                db.put({
-                                                    _id: record._id,
-                                                    _rev: record._rev,
-                                                    syncd: true
-                                                })
-                                            }
+                        // zomg really need to write a view for this
+                        res.rows.forEach( function( record ) {
+                            if ( !record.syncd ) {
+                                console.log( `Syncing ${ record._id }` )
+                                client.query(`
+                                    insert into samples values (
+                                        ${ record._id },
+                                        ${ record.alt },
+                                        ${ record.csq },
+                                        ${ record.timestamp },
+                                        ST_SetSRID( ST_MakePoint(
+                                            ${ record.lon },
+                                            ${ record.lat }
+                                        ), 4326 ),
+                                        NULL
+                                    );
+                                `, function( insErr, result ) {
+                                    if ( err ) {
+                                        console.log( 'ERR INSERTING POSTGIS RECORD', insErr )
+                                    } else {
+                                        // maybe i should actually check the response... mehhhh
+                                        db.put({
+                                            _id: record._id,
+                                            _rev: record._rev,
+                                            syncd: true
                                         })
                                     }
                                 })
@@ -231,8 +223,6 @@ function main() {
                         })
                     }
                 })
-
-                //client.end() // kill the client until the next loop regenerates it
             }
             next()
         },
