@@ -1,4 +1,5 @@
 var async = require( 'async' )
+var PouchDB = require( 'pouchdb' )
 var sp = require( 'serialport' )
 var nmea = require( 'nmea' )
 
@@ -37,7 +38,8 @@ var nmeaPort = new sp.SerialPort( argv.nmeaPort, {
     parser: sp.parsers.readline( '\r\n' )
 })
 
-var lat, lon, alt, updated, csq
+// vars
+var lat, lon, alt, updated, csq, prevLat, prevLon
 
 nmeaPort.on( 'data', function( line ) {
     var data = parse( line )
@@ -68,6 +70,8 @@ function updateCsq( cb ) {
     })
 }
 
+
+// utilites
 function parse( line ) {
     try {
         return nmea.parse( line )
@@ -89,8 +93,26 @@ function nmeaToDecimal( dmStr, dir ) {
     return decimal
 }
 
-function main( host='localhost', port='8125' ) {
+function haversine( ll1, ll2, r ) {
+    const deltaLat = dToR( ll2[0] - ll1[0] )
+    const deltaLon = dToR( ll2[1] - ll1[1] )
+    const a =
+        Math.sin( deltaLat / 2 ) * Math.sin( deltaLat / 2 ) +
+        Math.cos( dToR( ll1[0] ) ) * Math.cos( dToR( ll2[0] ) ) *
+        Math.sin( deltaLon / 2 ) * Math.sin( deltaLon / 2 )
+    const c = 2 * Math.atan2( Math.sqrt( a ), Math.sqrt( 1 - a ) )
+    return r * c
+}
+
+function commitSample( doc ) {
+    db.post( doc )
+}
+
+
+// main program loop
+function main() {
     var clock = (new Date()).getTime()
+    var db = new PouchDB( 'samples' )
 
     async.forever(
         function( next ) {
@@ -98,13 +120,34 @@ function main( host='localhost', port='8125' ) {
             //if ( cur >= ( clock + 300000 ) ) { // five minutes
             if ( cur >= ( clock + 5000 ) ) { // five seconds
                 clock = cur
+                const doc = {
+                    timestamp: updated,
+                    lat: lat,
+                    lon: lon,
+                    alt: alt,
+                    csq: csq
+                }
+
+                // only commit the sample if there's a significant enough change in distance from the last sample
+                var committed = false
+                if ( typeof prevLat != 'undefined' && typeof prevLon != 'undefined' ) {
+                    if ( haversine( [ prevLat, prevLon ], [ lat, lon ], 6371e3 ) > 800 ) { // arbitrarily 800 meters difference (~ 1/2 mile)
+                        commitSample( doc )
+                        committed = true
+                    }
+                } else {
+                    commitSample( doc )
+                    committed = true
+                }
+
                 console.log(`
                     \n===== SAMPLE =====\n
                     ${ updated }\n
                     Lat:\t${ lat }\n
                     Lon:\t${ lon }\n
                     Alt:\t${ alt }\n
-                    Csq:\t${ csq }
+                    Csq:\t${ csq }\n
+                    Committed? ${ committed }
                 `)
             }
             next()
