@@ -199,10 +199,10 @@ function main() {
                                 console.log( 'Syncing', doc )
                                 var query = `
                                     insert into samples values (
-                                        ${ doc._id },
+                                        '${ doc._id }',
                                         ${ doc.alt },
-                                        ${ doc.csq },
-                                        ${ doc.timestamp },
+                                        '${ doc.csq }',
+                                        '${ doc.timestamp }',
                                         ST_SetSRID( ST_MakePoint(
                                             ${ doc.lon },
                                             ${ doc.lat }
