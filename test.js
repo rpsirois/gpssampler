@@ -232,7 +232,7 @@ function main() {
                     }
                 })
 
-                client.end() // kill the client until the next loop regenerates it
+                //client.end() // kill the client until the next loop regenerates it
             }
             next()
         },
