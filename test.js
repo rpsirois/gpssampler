@@ -151,12 +151,11 @@ function main() {
                     Csq:\t${ csq }\n
                     Committed? ${ committed }
                 `)
+
+                db.allDocs( { include_docs: true }, function( err, docs ) {
+                    console.log( docs )
+                })
             }
-
-            db.allDocs( function( err, docs ) {
-                console.log( docs )
-            })
-
             next()
         },
         function( err ) {
