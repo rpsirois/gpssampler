@@ -16,6 +16,7 @@ if ( argv.list ) {
     })
 }
 
+// port for issuing AT commands
 var commPort = new sp.SerialPort( argv.commPort, {
     baudrate: 9600,
     parser: sp.parsers.readline( '\r\n' )
@@ -26,6 +27,7 @@ commPort.on( 'data', function( line ) {
     lastCommData = line
 })
 
+// port for listening to NMEA data
 var nmeaPort = new sp.SerialPort( argv.nmeaPort, {
     baudrate: 9600,
     parser: sp.parsers.readline( '\r\n' )
