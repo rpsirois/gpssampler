@@ -101,6 +101,7 @@ function main( host='localhost', port='8125' ) {
                     Csq:\t${ csq }
                 `)
             }
+            next()
         },
         function( err ) {
             console.log( err )
