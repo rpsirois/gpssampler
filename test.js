@@ -170,7 +170,13 @@ function main() {
                 syncClock = cur
 
                 console.log( 'Creating new PostGIS pooled connection.' )
-                var pool = new pg.Pool( 'postgres://postgres:password@138.68.45.102:5984/gpssamples' )
+                var pool = new pg.Pool({
+                    user: 'postgres',
+                    password: 'password',
+                    host: '138.68.45.102',
+                    port: 5984,
+                    database: 'gpssamples'
+                })
 
                 console.log( 'Getting all the PouchDB samples for sync' )
                 db.allDocs( { include_docs: true }, function( pouchErr, res ) {
@@ -186,7 +192,7 @@ function main() {
                             if ( !doc.syncd ) {
                                 console.log( 'Syncing', doc )
                                 pool.query(
-                                    'insert into samples values ( $1, $2, $3, $4, ST_SetSRID( ST_MakePoint( $5, $6 ), 4326 ), NULL );',
+                                    'insert into samples values ( $1::text, $2, $3::text, $4::text, ST_SetSRID( ST_MakePoint( $5, $6 ), 4326 ), NULL );',
                                     [ doc._id, doc.alt, doc.csq, doc.timestamp, doc.lon, doc.lat ]
                                 )
                                 .then( function( result ) {
