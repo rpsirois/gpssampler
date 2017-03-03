@@ -170,13 +170,7 @@ function main() {
                 syncClock = cur
 
                 console.log( 'Creating new PostGIS pooled connection.' )
-                var pool = new pg.Pool({
-                    user: 'postgres',
-                    password: 'password',
-                    host: '138.68.45.102',
-                    port: 5984,
-                    database: 'gpssamples'
-                })
+                var pool = new pg.Pool( 'postgres://postgres:password@138.68.45.102:5984/gpssamples' )
 
                 console.log( 'Getting all the PouchDB samples for sync' )
                 db.allDocs( { include_docs: true }, function( pouchErr, res ) {
