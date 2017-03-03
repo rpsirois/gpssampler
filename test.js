@@ -98,4 +98,5 @@ function main( host='localhost', port='8125' ) {
         function( err ) {
             console.log( err )
         }
+    )
 }
