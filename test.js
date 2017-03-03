@@ -190,6 +190,7 @@ function main() {
                     if ( err ) {
                         console.log( 'PG CONNECT ERR', err )
                     } else {
+                        console.log( 'Getting all the PouchDB samples for sync' )
                         db.allDocs( { include_docs: true }, function( pouchErr, res ) {
                             if ( pouchErr ) {
                                 console.log( 'SYNC POUCHDB ERR', pouchErr )
