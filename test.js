@@ -45,12 +45,19 @@ nmeaPort.on( 'data', function( line ) {
     }
 })
 
-function updateCsq() {
-    commPort.write( 'AT+CSQ' ).drain( function( err ) {
+function updateCsq( cb ) {
+    commPort.write( 'AT+CSQ', function( err ) {
         if ( err ) {
             console.log( err )
         } else {
-            csq = lastCommData
+            commPort.drain( function( err ) {
+                if ( err ) {
+                    console.log( err )
+                } else {
+                    csq = lastCommData
+                    if ( cb ) cb( csq )
+                }
+            })
         }
     })
 }
