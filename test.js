@@ -1,27 +1,18 @@
 var async = require( 'async' )
 var PouchDB = require( 'pouchdb' )
 var pg = require( 'pg' )
-var sp = require( 'serialport' )
+var SerialPort = require( 'serialport' )
 var nmea = require( 'nmea' )
 
 const argv = require( 'yargs' )
     .default( 'nmeaPort', 'COM4' )
     .default( 'commPort', 'COM6' )
-    .default( 'list', false )
     .argv
 
-if ( argv.list ) {
-    sp.list( function( err, ports ) {
-        ports.forEach( function( port ) {
-            console.log( port )
-        })
-    })
-}
-
 // port for issuing AT commands
-var commPort = new sp.SerialPort( argv.commPort, {
+var commPort = new SerialPort( argv.commPort, {
     baudrate: 9600,
-    parser: sp.parsers.readline( '\r\n' )
+    parser: SerialPort.parsers.readline( '\r\n' )
 })
 
 var lastCommData
@@ -34,9 +25,9 @@ commPort.on( 'data', function( line ) {
 })
 
 // port for listening to NMEA data
-var nmeaPort = new sp.SerialPort( argv.nmeaPort, {
+var nmeaPort = new SerialPort( argv.nmeaPort, {
     baudrate: 9600,
-    parser: sp.parsers.readline( '\r\n' )
+    parser: SerialPort.parsers.readline( '\r\n' )
 })
 
 // vars
@@ -150,6 +141,7 @@ function main() {
                         committed = true
                     }
 
+                    /*
                     console.log(`
                         \n===== SAMPLE =====\n
                         ${ updated }\n
@@ -159,6 +151,7 @@ function main() {
                         Csq:\t${ csq }\n
                         Committed? ${ committed }
                     `)
+                    */
                 }
             }
             next()
