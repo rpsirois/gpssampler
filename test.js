@@ -44,6 +44,8 @@ var lat, lon, alt, updated, csq, prevLat, prevLon
 nmeaPort.on( 'data', function( line ) {
     var data = parse( line )
     if ( data && data.sentence == 'GGA' ) {
+        prevLat = lat
+        prevLon = lon
         lat = nmeaToDecimal( data.lat, data.latPole )
         lon = nmeaToDecimal( data.lon, data.lonPole )
         alt = data.alt
@@ -150,6 +152,11 @@ function main() {
                     Committed? ${ committed }
                 `)
             }
+
+            db.allDocs( function( err, docs ) {
+                console.log( docs )
+            })
+
             next()
         },
         function( err ) {
