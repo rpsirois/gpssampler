@@ -205,7 +205,7 @@ function main() {
                                     );
                                 `
                                 console.log( 'Query', query )
-                                client.query( query, function( insErr, result ) {
+                                pool.query( query, function( insErr, result ) {
                                     if ( err ) {
                                         console.log( 'ERR INSERTING POSTGIS RECORD', insErr )
                                     } else {
