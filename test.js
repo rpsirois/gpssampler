@@ -174,7 +174,7 @@ function main() {
                     user: 'postgres',
                     password: 'password',
                     host: '138.68.45.102',
-                    port: 5984,
+                    port: 5432,//5984,
                     database: 'gpssamples'
                 }, function( err, client, done ) {
                     console.log( 'Getting all the PouchDB samples for sync' )
@@ -190,10 +190,21 @@ function main() {
 
                                 if ( !doc.syncd ) {
                                     console.log( 'Syncing', doc )
-                                    client.query(
-                                        'insert into samples values ( $1::text, $2, $3::text, $4::text, ST_SetSRID( ST_MakePoint( $5, $6 ), 4326 ), NULL );',
-                                        [ doc._id, doc.alt, doc.csq, doc.timestamp, doc.lon, doc.lat ]
-                                    )
+                                    client.query(`
+                                        insert into samples values (
+                                            '${ doc._id }',
+                                            ${ doc.alt },
+                                            '${ doc.csq }',
+                                            '${ doc.timestamp }',
+                                            ST_SetSRID(
+                                                ST_MakePoint(
+                                                    ${ doc.lon },
+                                                    ${ doc.lat }
+                                                )
+                                            , 4326 ),
+                                            NULL
+                                        );
+                                    `)
                                     .then( function( result ) {
                                         console.log( result )
                                         db.put({
