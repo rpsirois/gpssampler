@@ -24,8 +24,11 @@ var commPort = new sp.SerialPort( argv.commPort, {
 
 var lastCommData
 commPort.on( 'data', function( line ) {
-    console.log( 'COMM PORT:', line )
-    lastCommData = line
+    var idx = line.indexOf( '+CSQ: ' )
+
+    if ( idx >= 0 ) {
+        lastCommData = line.substr( 6 )
+    }
 })
 
 // port for listening to NMEA data
