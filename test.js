@@ -169,56 +169,55 @@ function main() {
             if ( cur >= ( syncClock + 10000 ) ) { // ten seconds
                 syncClock = cur
 
-                console.log( 'Starting PostGIS connection.' )
-                pg.connect({
+                var pool = pg.Pool({
                     user: 'postgres',
                     password: 'password',
                     host: '138.68.45.102',
                     port: 5432,//5984,
                     database: 'gpssamples'
-                }, function( err, client, done ) {
-                    console.log( 'Getting all the PouchDB samples for sync' )
-                    db.allDocs( { include_docs: true }, function( pouchErr, res ) {
-                        if ( pouchErr ) {
-                            console.log( 'SYNC POUCHDB ERR', pouchErr )
-                        } else {
-                            console.log( `DB size == ${ res.rows.length }` )
+                })
 
-                            // zomg really need to write a view for this
-                            res.rows.forEach( function( record ) {
-                                var doc = record.doc
+                console.log( 'Getting all the PouchDB samples for sync' )
+                db.allDocs( { include_docs: true }, function( pouchErr, res ) {
+                    if ( pouchErr ) {
+                        console.log( 'SYNC POUCHDB ERR', pouchErr )
+                    } else {
+                        console.log( `DB size == ${ res.rows.length }` )
 
-                                if ( !doc.syncd ) {
-                                    console.log( 'Syncing', doc )
-                                    client.query(`
-                                        insert into samples values (
-                                            '${ doc._id }',
-                                            ${ doc.alt },
-                                            '${ doc.csq }',
-                                            '${ doc.timestamp }',
-                                            ST_SetSRID(
-                                                ST_MakePoint(
-                                                    ${ doc.lon },
-                                                    ${ doc.lat }
-                                                )
-                                            , 4326 ),
-                                            NULL
-                                        );
-                                    `)
-                                    .then( function( result ) {
-                                        console.log( result )
-                                        db.put({
-                                            _id: doc._id,
-                                            _rev: doc._rev,
-                                            syncd: true
-                                        })
+                        // zomg really need to write a view for this
+                        res.rows.forEach( function( record ) {
+                            var doc = record.doc
+
+                            if ( !doc.syncd ) {
+                                console.log( 'Syncing', doc )
+                                pool.query(`
+                                    insert into samples values (
+                                        '${ doc._id }',
+                                        ${ doc.alt },
+                                        '${ doc.csq }',
+                                        '${ doc.timestamp }',
+                                        ST_SetSRID(
+                                            ST_MakePoint(
+                                                ${ doc.lon },
+                                                ${ doc.lat }
+                                            )
+                                        , 4326 ),
+                                        NULL
+                                    );
+                                `)
+                                .then( function( result ) {
+                                    console.log( result )
+                                    db.put({
+                                        _id: doc._id,
+                                        _rev: doc._rev,
+                                        syncd: true
                                     })
-                                    .catch( err => console.log( 'ERR INSERTING POSTGIS RECORD', err ) )
-                                }
-                            })
-                        }
-                    })
-                    done()
+                                })
+                                .catch( err => console.log( 'ERR INSERTING POSTGIS RECORD', err ) )
+                            }
+                        })
+                    }
+                })
                 })
             }
             next()
