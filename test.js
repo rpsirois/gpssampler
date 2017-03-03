@@ -216,6 +216,7 @@ function main() {
                                         console.log( 'ERR INSERTING POSTGIS RECORD', insErr )
                                     } else {
                                         // maybe i should actually check the response... mehhhh
+                                        console.log( 'here' )
                                         db.put({
                                             _id: doc._id,
                                             _rev: doc._rev,
