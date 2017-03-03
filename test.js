@@ -124,41 +124,44 @@ function main() {
             //if ( cur >= ( clock + 300000 ) ) { // five minutes
             if ( cur >= ( clock + 5000 ) ) { // five seconds
                 clock = cur
-                const doc = {
-                    timestamp: updated,
-                    lat: lat,
-                    lon: lon,
-                    alt: alt,
-                    csq: csq
-                }
 
-                // only commit the sample if there's a significant enough change in distance from the last sample
-                var committed = false
-                if ( typeof prevLat != 'undefined' && typeof prevLon != 'undefined' ) {
-                    if ( haversine( [ prevLat, prevLon ], [ lat, lon ], 6371e3 ) > 800 ) { // arbitrarily 800 meters difference (~ 1/2 mile)
+                if ( typeof csq != 'undefined' ) { // csq data may not be ready yet
+                    const doc = {
+                        timestamp: updated,
+                        lat: lat,
+                        lon: lon,
+                        alt: alt,
+                        csq: csq
+                    }
+
+                    // only commit the sample if there's a significant enough change in distance from the last sample
+                    var committed = false
+                    if ( typeof prevLat != 'undefined' && typeof prevLon != 'undefined' ) {
+                        if ( haversine( [ prevLat, prevLon ], [ lat, lon ], 6371e3 ) > 800 ) { // arbitrarily 800 meters difference (~ 1/2 mile)
+                            commitSample( db, doc )
+                            committed = true
+                        }
+                    } else {
                         commitSample( db, doc )
                         committed = true
                     }
-                } else {
-                    commitSample( db, doc )
-                    committed = true
-                }
 
-                console.log(`
-                    \n===== SAMPLE =====\n
-                    ${ updated }\n
-                    Lat:\t${ lat }\n
-                    Lon:\t${ lon }\n
-                    Alt:\t${ alt }\n
-                    Csq:\t${ csq }\n
-                    Committed? ${ committed }
-                `)
+                    console.log(`
+                        \n===== SAMPLE =====\n
+                        ${ updated }\n
+                        Lat:\t${ lat }\n
+                        Lon:\t${ lon }\n
+                        Alt:\t${ alt }\n
+                        Csq:\t${ csq }\n
+                        Committed? ${ committed }
+                    `)
 
-                db.allDocs( { include_docs: true }, function( err, res ) {
-                    res.rows.forEach( function( record ) {
-                        console.log( record )
+                    db.allDocs( { include_docs: true }, function( err, res ) {
+                        res.rows.forEach( function( record ) {
+                            console.log( record.doc )
+                        })
                     })
-                })
+                }
             }
             next()
         },
