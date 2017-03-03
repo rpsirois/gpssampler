@@ -194,13 +194,12 @@ function main() {
                         // zomg really need to write a view for this
                         res.rows.forEach( function( record ) {
                             var doc = record.doc
-                            var val = record.value
 
                             if ( !doc.syncd ) {
-                                console.log( `Syncing ${ val._id }` )
+                                console.log( `Syncing ${ doc._id }` )
                                 pool.query(`
                                     insert into samples values (
-                                        ${ val._id },
+                                        ${ doc._id },
                                         ${ doc.alt },
                                         ${ doc.csq },
                                         ${ doc.timestamp },
@@ -216,8 +215,8 @@ function main() {
                                     } else {
                                         // maybe i should actually check the response... mehhhh
                                         db.put({
-                                            _id: val._id,
-                                            _rev: val._rev,
+                                            _id: doc._id,
+                                            _rev: doc._rev,
                                             syncd: true
                                         })
                                     }
