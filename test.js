@@ -104,7 +104,7 @@ function haversine( ll1, ll2, r ) {
     return r * c
 }
 
-function commitSample( doc ) {
+function commitSample( db, doc ) {
     db.post( doc )
 }
 
@@ -132,11 +132,11 @@ function main() {
                 var committed = false
                 if ( typeof prevLat != 'undefined' && typeof prevLon != 'undefined' ) {
                     if ( haversine( [ prevLat, prevLon ], [ lat, lon ], 6371e3 ) > 800 ) { // arbitrarily 800 meters difference (~ 1/2 mile)
-                        commitSample( doc )
+                        commitSample( db, doc )
                         committed = true
                     }
                 } else {
-                    commitSample( doc )
+                    commitSample( db, doc )
                     committed = true
                 }
 
