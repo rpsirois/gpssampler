@@ -168,6 +168,8 @@ function main() {
         }
     )
 
+    console.log( 'here' )
+
     // postgis synchoronization loop
     async.forever(
         function( next ) {
