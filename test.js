@@ -23,7 +23,7 @@ var port = new sp.SerialPort( argv.port, {
 var countSamples = argv.samples
 
 port.on( 'data', function( line ) {
-    if ( if typeof argv.samples == 'number' ) {
+    if ( typeof argv.samples == 'number' ) {
         if ( countSamples > 0 ) print( line )
     } else {
         print( line )
