@@ -168,8 +168,6 @@ function main() {
         }
     )
 
-    console.log( 'here' )
-
     // postgis synchoronization loop
     async.forever(
         function( next ) {
@@ -187,13 +185,14 @@ function main() {
                     database: 'gpssamples'
                 })
 
+                console.log( 'Connecting to PostGIS database' )
                 client.connect( function( err ) {
                     if ( err ) {
                         console.log( 'PG CONNECT ERR', err )
                     } else {
-                        db.allDocs( { include_docs: true }, function( err, res ) {
-                            if ( err ) {
-                                console.log( 'SYNC POUCHDB ERR', err )
+                        db.allDocs( { include_docs: true }, function( pouchErr, res ) {
+                            if ( pouchErr ) {
+                                console.log( 'SYNC POUCHDB ERR', pouchErr )
                             } else {
                                 console.log( `DB size == ${ res.rows.length }` )
 
