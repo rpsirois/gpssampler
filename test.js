@@ -205,10 +205,8 @@ function main() {
                                     );
                                 `
                                 console.log( 'Query', query )
-                                pool.query( query, function( insErr, result ) {
-                                    if ( err ) {
-                                        console.log( 'ERR INSERTING POSTGIS RECORD', insErr )
-                                    } else {
+                                pool.query( query )
+                                    .then( function( result ) {
                                         // maybe i should actually check the response... mehhhh
                                         console.log( 'here' )
                                         db.put({
@@ -216,8 +214,8 @@ function main() {
                                             _rev: doc._rev,
                                             syncd: true
                                         })
-                                    }
-                                })
+                                    })
+                                    .catch( err => console.log( 'ERR INSERTING POSTGIS RECORD', insErr ) )
                             }
                         })
                     }
