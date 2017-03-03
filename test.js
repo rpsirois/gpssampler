@@ -24,6 +24,7 @@ var commPort = new sp.SerialPort( argv.commPort, {
 
 var lastCommData
 commPort.on( 'data', function( line ) {
+    console.log( 'COMM PORT:', line )
     lastCommData = line
 })
 
@@ -48,7 +49,7 @@ nmeaPort.on( 'data', function( line ) {
 })
 
 function updateCsq( cb ) {
-    commPort.write( 'AT+CSQ', function( err ) {
+    commPort.write( 'AT+CSQ\r\n', function( err ) {
         if ( err ) {
             console.log( err )
         } else {
@@ -110,3 +111,5 @@ function main( host='localhost', port='8125' ) {
         }
     )
 }
+
+main()
