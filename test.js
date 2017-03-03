@@ -95,6 +95,8 @@ function nmeaToDecimal( dmStr, dir ) {
     return decimal
 }
 
+function dToR( d ) { return d * ( Math.PI / 180 ) }
+
 function haversine( ll1, ll2, r ) {
     const deltaLat = dToR( ll2[0] - ll1[0] )
     const deltaLon = dToR( ll2[1] - ll1[1] )
