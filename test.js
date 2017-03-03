@@ -203,7 +203,7 @@ function main() {
                                         syncd: true
                                     })
                                 })
-                                .catch( err => console.log( 'ERR INSERTING POSTGIS RECORD', insErr ) )
+                                .catch( err => console.log( 'ERR INSERTING POSTGIS RECORD', err ) )
                             }
                         })
                     }
