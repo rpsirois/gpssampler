@@ -154,8 +154,10 @@ function main() {
                     Committed? ${ committed }
                 `)
 
-                db.allDocs( { include_docs: true }, function( err, docs ) {
-                    console.log( docs )
+                db.allDocs( { include_docs: true }, function( err, res ) {
+                    res.rows.forEach( function( record ) {
+                        console.log( record )
+                    })
                 })
             }
             next()
