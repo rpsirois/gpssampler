@@ -193,17 +193,20 @@ function main() {
 
                         // zomg really need to write a view for this
                         res.rows.forEach( function( record ) {
-                            if ( !record.syncd ) {
-                                console.log( `Syncing ${ record._id }` )
-                                client.query(`
+                            var doc = record.doc
+                            var val = record.value
+
+                            if ( !doc.syncd ) {
+                                console.log( `Syncing ${ val._id }` )
+                                pool.query(`
                                     insert into samples values (
-                                        ${ record._id },
-                                        ${ record.alt },
-                                        ${ record.csq },
-                                        ${ record.timestamp },
+                                        ${ val._id },
+                                        ${ doc.alt },
+                                        ${ doc.csq },
+                                        ${ doc.timestamp },
                                         ST_SetSRID( ST_MakePoint(
-                                            ${ record.lon },
-                                            ${ record.lat }
+                                            ${ doc.lon },
+                                            ${ doc.lat }
                                         ), 4326 ),
                                         NULL
                                     );
@@ -213,8 +216,8 @@ function main() {
                                     } else {
                                         // maybe i should actually check the response... mehhhh
                                         db.put({
-                                            _id: record._id,
-                                            _rev: record._rev,
+                                            _id: val._id,
+                                            _rev: val._rev,
                                             syncd: true
                                         })
                                     }
