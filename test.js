@@ -196,13 +196,13 @@ function main() {
                                         ${ doc.alt },
                                         '${ doc.csq }',
                                         '${ doc.timestamp }',
+                                        NULL,
                                         ST_SetSRID(
                                             ST_MakePoint(
                                                 ${ doc.lon },
                                                 ${ doc.lat }
                                             )
-                                        , 4326 ),
-                                        NULL
+                                        , 4326 )
                                     );
                                 `)
                                 .then( function( result ) {
