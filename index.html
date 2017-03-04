@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>View GPS Samples</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="/css/leaflet.css" />
+        <link rel="stylesheet" href="/css/css.css" />
+        <script src="/js/leaflet.js"></script>
+    </head>
+    <body>
+        <div id="map"></div>
+        <script>
+            var map = L.map('map').setView( [ 38.8320890947592, -104.525584561672 ], 11 );
+
+            L.tileLayer( 'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoicnBzaXJvaXMiLCJhIjoiTVFWWVpsSSJ9.upCwPHwjiOg1bd5FvMsqTw', {
+                maxZoom: 18,
+                attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+                    '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+                    'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+                id: 'mapbox.streets'
+            }).addTo( map );
+
+            function renderPopup( doc ) {
+                var weather = JSON.parse( doc.weather ).currently;
+                return '\
+                    <table>\
+                        <tr>\
+                            <td><strong>ID</strong></td>\
+                            <td>' + doc.id + '</td>\
+                        </tr>\
+                        <tr>\
+                            <td><strong>Altitude</strong></td>\
+                            <td>' + doc.alt + 'm</td>\
+                        </tr>\
+                        <tr>\
+                            <td><strong>CSQ</strong></td>\
+                            <td>' + doc.csq + '</td>\
+                        </tr>\
+                        <tr>\
+                            <td><strong>Timestamp</strong></td>\
+                            <td>' + doc.timestamp + '</td>\
+                        </tr>\
+                        <tr>\
+                            <td><strong>Weather</strong></td>\
+                            <td>\
+                                <table>\
+                                    <tr>\
+                                        <td colspan="2">Weather info is <a href="https://darksky.net/poweredby/" target="_blank">Powered by Dark Sky</a></td>\
+                                    </tr>\
+                                    <tr>\
+                                        <td><strong>Temperature</strong></td>\
+                                        <td>' + weather.temperature + '</td>\
+                                    </tr>\
+                                    <tr>\
+                                        <td><strong>Dew Point</strong></td>\
+                                        <td>' + weather.dewPoint + '</td>\
+                                    </tr>\
+                                    <tr>\
+                                        <td><strong>Summary</strong></td>\
+                                        <td>' + weather.summary + '</td>\
+                                    </tr>\
+                                </table>\
+                            </td>\
+                        </tr>\
+                    </table>\
+                ';
+            }
+
+            var req = new XMLHttpRequest();
+            req.onreadystatechange = function() {
+                if ( req.readyState == XMLHttpRequest.DONE ) {
+                    if ( req.status == 200 ) {
+                        var samples = JSON.parse( req.responseText )
+                        for ( var i = 0; i < samples.length; i++ ) {
+                            var sample = samples[i]
+                            var layer = L.geoJSON( JSON.parse( sample.geom ), {
+                                onEachFeature: function( f, l ) {
+                                    l.bindPopup( renderPopup( sample ) )
+                                }
+                            }).addTo( map )
+                        }
+                    } else {
+                        console.log( 'Something went wrong fetching GPS samples from server.' )
+                    }
+                }
+            };
+            req.open( 'GET', '/samples/all', true )
+            req.send()
+        </script>
+    </body>
+</html>
+
