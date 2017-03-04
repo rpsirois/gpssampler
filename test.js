@@ -173,7 +173,7 @@ function main() {
                     user: 'postgres',
                     password: 'password',
                     host: '138.68.45.102',
-                    port: 5432,//5984,
+                    port: 5432,
                     database: 'gpssamples'
                 })
 
