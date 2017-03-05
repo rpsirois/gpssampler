@@ -1,0 +1,16 @@
+{
+    "name": "GPS Sampler Client Program",
+    "version": "0.0.1",
+    "description": "Listens to NMEA COM port and issues AT+CSQ command to sample location and RSSI metrics, then stores them locally beforing synchronizing with a POSTGIS DB.",
+    "author": "Robert Sirois and Universes Games (http://universesgames.com)",
+    "repository": "https://github.com/rpsirois/gpssampler",
+    "dependencies": {
+        "async": "*",
+        "pouchdb": "*",
+        "pg": "*",
+        "serialport": "*",
+        "nmea": "*",
+        "yargs": "*"
+    },
+    "license": "MIT"
+}

@@ -7,6 +7,22 @@ var nmea = require( 'nmea' )
 const argv = require( 'yargs' )
     .default( 'nmeaPort', 'COM4' )
     .default( 'commPort', 'COM6' )
+    .default( 'sampleInterval', 300000 ) // five minutes
+    .describe( 'sampleInterval', 'Milliseconds between each sample attempt.' )
+    .number( 'sampleInterval' )
+    .default( 'syncInterval', 3.6e6 ) // one hour
+    .describe( 'syncInterval', 'Milliseconds between each POSTGIS DB synchronization.' )
+    .number( 'syncInterval' )
+    .default( 'sampleDiff', 800 )
+    .describe( 'sampleDiff', 'Threshold distance in meters since last sample before new sample is recorded.' )
+    .number( 'sampleDiff' )
+    .describe( 'pgUser', 'POSTGIS DB username' )
+    .describe( 'pgPass', 'POSTGIS DB password' )
+    .describe( 'pgHost', 'POSTGIS host address' )
+    .describe( 'pgPort', 'POSTGIS host port' )
+    .describe( 'pgDb', 'POSTGIS database' )
+    .demandOption([ 'pgUser', 'pgPass', 'pgHost', 'pgPort', 'pgDb', 'key' ])
+    .help( 'h' )
     .argv
 
 // port for issuing AT commands
@@ -15,10 +31,12 @@ var commPort = new SerialPort( argv.commPort, {
     parser: SerialPort.parsers.readline( '\r\n' )
 })
 
+// listen to AT command responses
 var lastCommData
 commPort.on( 'data', function( line ) {
     var idx = line.indexOf( '+CSQ: ' )
 
+    // only store data if it's the CSQ response
     if ( idx >= 0 ) {
         lastCommData = line.substr( 6 )
     }
@@ -33,8 +51,12 @@ var nmeaPort = new SerialPort( argv.nmeaPort, {
 // vars
 var lat, lon, alt, updated, csq, prevLat, prevLon
 
+// continually update data as it comes in
+// if there's a parse error, that particular sample will just be skipped
 nmeaPort.on( 'data', function( line ) {
     var data = parse( line )
+
+    // GGA sentences contain the GPS fix info we are looking for
     if ( data && data.sentence == 'GGA' ) {
         prevLat = lat
         prevLon = lon
@@ -43,10 +65,12 @@ nmeaPort.on( 'data', function( line ) {
         alt = data.alt
         updated = new Date()
 
+        // send the AT command for CSQ each time we sample GGA info
         updateCsq()
     }
 })
 
+// fn to send AT command for RSSI information
 function updateCsq( cb ) {
     commPort.write( 'AT+CSQ\r\n', function( err ) {
         if ( err ) {
@@ -64,7 +88,6 @@ function updateCsq( cb ) {
     })
 }
 
-
 // utilites
 function parse( line ) {
     try {
@@ -74,6 +97,7 @@ function parse( line ) {
     }
 }
 
+// convert from NMEA format (d)ddmm.mmmm to decimal
 function nmeaToDecimal( dmStr, dir ) {
     var idx = dmStr.indexOf( '.' ) - 2
     if ( idx < 0 ) idx = 0
@@ -87,6 +111,7 @@ function nmeaToDecimal( dmStr, dir ) {
     return decimal
 }
 
+// lat/lon utilities for determining distance between
 function dToR( d ) { return d * ( Math.PI / 180 ) }
 
 function haversine( ll1, ll2, r ) {
@@ -100,12 +125,14 @@ function haversine( ll1, ll2, r ) {
     return r * c
 }
 
+// save record in local PouchDB instance
 function commitSample( db, doc ) {
     db.post( doc )
 }
 
-
+//
 // main program loop
+//
 function main() {
     var sampleClock = (new Date()).getTime()
     var syncClock = (new Date()).getTime()
@@ -115,8 +142,7 @@ function main() {
     async.forever(
         function( next ) {
             var cur = (new Date()).getTime()
-            //if ( cur >= ( sampleClock + 300000 ) ) { // five minutes
-            if ( cur >= ( sampleClock + 5000 ) ) { // five seconds
+            if ( cur >= ( sampleClock + argv.sampleInterval ) ) {
                 sampleClock = cur
 
                 if ( typeof csq != 'undefined' ) { // csq data may not be ready yet
@@ -140,19 +166,7 @@ function main() {
                         commitSample( db, doc )
                         committed = true
                     }
-
-                    /*
-                    console.log(`
-                        \n===== SAMPLE =====\n
-                        ${ updated }\n
-                        Lat:\t${ lat }\n
-                        Lon:\t${ lon }\n
-                        Alt:\t${ alt }\n
-                        Csq:\t${ csq }\n
-                        Committed? ${ committed }
-                    `)
-                    */
-                }
+                } // if csq data isn't there yet, then just skip that sample
             }
             next()
         },
@@ -165,31 +179,30 @@ function main() {
     async.forever(
         function( next ) {
             var cur = (new Date()).getTime()
-            //if ( cur >= ( syncClock + 3.6e6 ) ) { // one hour
-            if ( cur >= ( syncClock + 10000 ) ) { // ten seconds
+            // TODO: maybe this should do something more complex based on network speed?
+            if ( cur >= ( syncClock + argv.syncInterval ) ) {
                 syncClock = cur
 
+                // use a pool since it will manage the connections for us
                 var pool = new pg.Pool({
-                    user: 'postgres',
-                    password: 'password',
-                    host: '138.68.45.102',
-                    port: 5432,
-                    database: 'gpssamples'
+                    user: argv.pgUser,
+                    password: argv.pgPass,
+                    host: argv.pgHost,
+                    port: argv.pgPort,
+                    database: argv.pgDb
                 })
 
-                console.log( 'Getting all the PouchDB samples for sync' )
+                // get all local PouchDB records that haven't been sync'd yet
                 db.allDocs( { include_docs: true }, function( pouchErr, res ) {
                     if ( pouchErr ) {
                         console.log( 'SYNC POUCHDB ERR', pouchErr )
                     } else {
-                        console.log( `DB size == ${ res.rows.length }` )
-
                         // zomg really need to write a view for this
                         res.rows.forEach( function( record ) {
                             var doc = record.doc
 
+                            // this is lazy - it should be handled in the query
                             if ( !doc.syncd ) {
-                                console.log( 'Syncing', doc )
                                 pool.query(`
                                     insert into samples values (
                                         '${ doc._id }',
@@ -206,7 +219,6 @@ function main() {
                                     );
                                 `)
                                 .then( function( result ) {
-                                    console.log( result )
                                     db.put({
                                         _id: doc._id,
                                         _rev: doc._rev,

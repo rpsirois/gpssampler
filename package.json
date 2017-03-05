@@ -1,0 +1,14 @@
+{
+    "name": "GPS Sampler Weather Synchronizer and Web Server",
+    "version": "0.0.1",
+    "description": "Checks configured POSTGIS DB for samples without weather data and marries that data to the samples via the Dark Sky API. Allows serves a basic Leaflet app for viewing the samples.",
+    "author": "Robert Sirois and Universes Games (http://universesgames.com)",
+    "repository": "https://github.com/rpsirois/gpssampler",
+    "dependencies": {
+        "async": "*",
+        "request": "*",
+        "pg": "*",
+        "yargs": "*"
+    },
+    "license": "MIT"
+}

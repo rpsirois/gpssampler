@@ -3,4 +3,4 @@ cls
 
 @echo "<ctrl> + C, or click the 'X' to exit."
 
-.\node.exe test.js
+.\node.exe client.js
